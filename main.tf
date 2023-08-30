@@ -411,6 +411,7 @@ resource "local_file" "inv_cfg" {
 
 #ЗАПУСКАЕМ playbook
 resource "null_resource" "ansible_provisioner" {
+depends_on = [vcd_vapp_vm.iam]
 
   triggers = {
     timestamp = timestamp()
@@ -419,7 +420,7 @@ resource "null_resource" "ansible_provisioner" {
   provisioner "local-exec" {
     command = <<-EOT
       timeout 2m ansible-playbook -i "${path.module}/inv.cfg" \
-                       -u onlanta provision.yml
+                       -u deploy --private-key ${var.ssh_private_key_path} provision.yml
     EOT
   }
 }
