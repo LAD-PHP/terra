@@ -19,6 +19,7 @@ data "vcd_catalog_vapp_template" "centos7" {
 }
 
 #STORAGE
+#создания независимого диска в VMware Cloud Director (VCD).
 resource "vcd_independent_disk" "stor" {
   count        = var.vm_count
   name         = "stor${count.index + 1}"
@@ -84,16 +85,19 @@ resource "vcd_vapp_vm" "storage" {
     #storage_profile = var.vcd_org_ssd_sp
   }
 
-  dynamic "disk" {
-    for_each = vcd_independent_disk.stor
-    content {
-      name        = disk.stor[count.index].name
-      bus_number  = 1
-      unit_number = 0
-    }
-  }
+#  dynamic "disk" {
+#    for_each = vcd_independent_disk.stor
+#    content {
+#      name        = disk.stor[count.index].name
+#      bus_number  = 1
+#      unit_number = 0
+#    }
+#  }
 
+#Добавляем диски
   disk {
+    #Эта строка указывает на имя виртуального диска, который будет подключен. Оно берется из ресурса vcd_independent_disk с именем stor и индексом count.index,
+    #что позволяет использовать правильное имя диска для каждой создаваемой виртуальной машины.
     name        = vcd_independent_disk.stor[count.index].name
     bus_number  = 1
     unit_number = 0
@@ -151,6 +155,8 @@ resource "vcd_vapp_vm" "meta" {
   }
 
   disk {
+    #Эта строка указывает на имя виртуального диска, который будет подключен. Оно берется из ресурса vcd_independent_disk с именем stor и индексом count.index,
+    #что позволяет использовать правильное имя диска для каждой создаваемой виртуальной машины.
     name        = vcd_independent_disk.meta[count.index].name
     bus_number  = 1
     unit_number = 0
@@ -360,7 +366,7 @@ locals {
   balancer   = zipmap([local.vm_names_balancer], [local.vm_ips_balancer])
   monitoring = zipmap([local.vm_names_monitoring], [local.vm_ips_monitoring])
   iam        = zipmap([local.vm_names_iam], [local.vm_ips_iam])
-  #Создаём 1 общий объект
+  #Создаём 1 общий объект для того чтобы перебрать его через цикл в шаблоне hosts.tpl
   combined_data = merge(
     local.storage,
     local.meta,
@@ -402,14 +408,14 @@ resource "local_file" "hosts_cfg" {
 resource "local_file" "inv_cfg" {
   content = templatefile("${path.module}/hosts.tpl",
     {
-      #это всё массивы данных с key-value
+      #это всё массивы данных с key-value, перебирается циклом
       array = local.combined_data
     }
   )
   filename = "hosts.cfg"
 }
 
-#ЗАПУСКАЕМ playbook
+#ЗАПУСКАЕМ playbook после того как создастся вм iam с таймаутом в 2 минуты под пользователем деплой с указанием пути на ключ
 resource "null_resource" "ansible_provisioner" {
 depends_on = [vcd_vapp_vm.iam]
 
