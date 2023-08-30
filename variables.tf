@@ -9,3 +9,9 @@ variable "vm_count" {
   description = "description"
   default     = 3
 }
+
+variable "ssh_private_key_path" {
+  type        = string
+  description = "Path to the private SSH key"
+  default     = "/home/deploy/.ssh/id_rsa"
+}
