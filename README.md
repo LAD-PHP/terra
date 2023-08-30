@@ -4,3 +4,4 @@
 * #скачать говно для parted
 * ansible-galaxy collection install community.general
 * на шаблоне с cloudinit необходимо отредачить  конфиг сети перевести его в статик
+* terraform apply -parallelism=3
